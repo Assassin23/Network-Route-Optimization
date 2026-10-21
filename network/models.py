@@ -27,3 +27,17 @@ class Edge(models.Model):
         ]
     def __str__(self):
         return f"{self.source.name} -> {self.destination.name} ({self.latency}ms)"
+
+class RouteQuery(models.Model):
+    """Stores history of successful shortest path queries."""
+    source = models.CharField(max_length=100)
+    destination = models.CharField(max_length=100)
+    total_latency = models.FloatField()
+    path = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.source} -> {self.destination} ({self.total_latency}ms)"

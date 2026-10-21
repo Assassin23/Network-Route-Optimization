@@ -35,4 +35,11 @@ class EdgeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Self-loops are not allowed: source and destination cannot be identical.")
         return attrs
 
+class ShortestRouteRequestSerializer(serializers.Serializer):
+    source = serializers.SlugRelatedField(
+        slug_field="name", queryset=Node.objects.all()
+    )
+    destination = serializers.SlugRelatedField(
+        slug_field="name", queryset=Node.objects.all()
+    )
 
