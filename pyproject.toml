@@ -1,7 +1,7 @@
 [project]
 name = "routes"
 version = "0.1.0"
-description = "Add your description here"
+description = "REST API for network route optimization (nodes, edges, shortest paths) built with Django and DRF"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
