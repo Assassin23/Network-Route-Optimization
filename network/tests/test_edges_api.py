@@ -184,3 +184,63 @@ def test_reverse_edge_is_allowed(api_client):
     )
     assert res2.status_code == 201
     assert Edge.objects.count() == 2
+
+@pytest.mark.django_db
+def test_list_edges_returns_all_edges_with_names(api_client):
+    node_a = Node.objects.create(name="ServerA")
+    node_b = Node.objects.create(name="ServerB")
+    Edge.objects.create(source=node_a, destination=node_b, latency=10.0)
+
+    response = api_client.get("/edges")
+    assert response.status_code == 200
+    assert len(response.data) == 1
+    assert response.data[0]["source"] == "ServerA"
+    assert response.data[0]["destination"] == "ServerB"
+    assert response.data[0]["latency"] == 10.0
+
+
+@pytest.mark.django_db
+def test_delete_edge_returns_204(api_client):
+    node_a = Node.objects.create(name="ServerA")
+    node_b = Node.objects.create(name="ServerB")
+    edge = Edge.objects.create(source=node_a, destination=node_b, latency=10.0)
+
+    response = api_client.delete(f"/edges/{edge.id}")
+    assert response.status_code == 204
+    assert Edge.objects.filter(id=edge.id).count() == 0
+
+
+@pytest.mark.django_db
+def test_delete_nonexistent_edge_returns_404(api_client):
+    response = api_client.delete("/edges/99999")
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_route_changes_after_edge_deleted(api_client):
+    """
+    Test that deleting an edge causes subsequent route calculation to choose alternate path.
+    """
+    node_a = Node.objects.create(name="A")
+    node_b = Node.objects.create(name="B")
+    node_c = Node.objects.create(name="C")
+
+    # Direct edge A -> C is 30ms
+    Edge.objects.create(source=node_a, destination=node_c, latency=30.0)
+    # Cheaper multi-hop A -> B -> C is 15ms
+    Edge.objects.create(source=node_a, destination=node_b, latency=5.0)
+    cheap_edge = Edge.objects.create(source=node_b, destination=node_c, latency=10.0)
+
+    # Initially takes cheaper path A -> B -> C (15.0)
+    res1 = api_client.post("/routes/shortest", {"source": "A", "destination": "C"}, format="json")
+    assert res1.data["total_latency"] == 15.0
+    assert res1.data["path"] == ["A", "B", "C"]
+
+    # Delete the cheap edge B -> C
+    del_res = api_client.delete(f"/edges/{cheap_edge.id}")
+    assert del_res.status_code == 204
+
+    # Subsequent query now falls back to direct A -> C (30.0)
+    res2 = api_client.post("/routes/shortest", {"source": "A", "destination": "C"}, format="json")
+    assert res2.data["total_latency"] == 30.0
+    assert res2.data["path"] == ["A", "C"]

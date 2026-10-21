@@ -1,9 +1,9 @@
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, DestroyAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import RouteQuery
+from .models import Edge, Node, RouteQuery
 from .serializers import (
     NodeSerializer, 
     EdgeSerializer, 
@@ -13,19 +13,24 @@ from .serializers import (
 )
 from .services import find_shortest_route
 
-class NodeListCreateView(APIView):
-    def post(self, request):
-        serializer = NodeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+class NodeListCreateView(ListCreateAPIView):
+    queryset = Node.objects.all()
+    serializer_class = NodeSerializer
 
-class EdgeListCreateView(APIView):
-    def post(self, request):
-        serializer = EdgeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+class NodeDetailView(DestroyAPIView):
+    queryset = Node.objects.all()
+    serializer_class = NodeSerializer
+
+
+class EdgeListCreateView(ListCreateAPIView):
+    queryset = Edge.objects.all()
+    serializer_class = EdgeSerializer
+
+
+class EdgeDetailView(DestroyAPIView):
+    queryset = Edge.objects.all()
+    serializer_class = EdgeSerializer
+
 
 class ShortestRouteView(APIView):
     def post(self, request):
@@ -55,6 +60,7 @@ class ShortestRouteView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
 
 class RouteHistoryView(ListAPIView):
     serializer_class = RouteQuerySerializer

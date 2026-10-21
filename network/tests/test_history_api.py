@@ -1,6 +1,5 @@
 import pytest
-from network.models import RouteQuery
-from network.models import Edge, Node
+from network.models import Edge, Node, RouteQuery
 
 
 @pytest.fixture
