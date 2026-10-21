@@ -21,6 +21,7 @@ db.sqlite3
 
 # Local notes (not shared)
 IMPLEMENTATION_PLAN.md
+network_route_optimization_api.md
 
 # Secrets
 .env
