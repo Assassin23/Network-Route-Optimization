@@ -33,3 +33,21 @@ def test_create_node_persists_to_db():
     node = Node.objects.get()
     assert node.name == "ServerA"
     assert node.id == response.data["id"]
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "payload",
+    [{}, {"name": ""}, {"name": "   "}, {"name": None}],
+    ids=["missing", "blank", "whitespace", "null"],
+)
+def test_create_node_with_invalid_name_returns_400(payload):
+    """
+    Test that POST /nodes rejects a missing, blank, whitespace-only or null name.
+    """
+    client = APIClient()
+    response = client.post("/nodes", payload, format="json")
+
+    assert response.status_code == 400
+    assert "name" in response.data
+    assert Node.objects.count() == 0
+
