@@ -1,9 +1,16 @@
 from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import RouteQuery
-from .serializers import NodeSerializer, EdgeSerializer, ShortestRouteRequestSerializer
+from .serializers import (
+    NodeSerializer, 
+    EdgeSerializer, 
+    ShortestRouteRequestSerializer,
+    RouteQuerySerializer,
+    HistoryFilterSerializer
+)
 from .services import find_shortest_route
 
 class NodeListCreateView(APIView):
@@ -48,3 +55,23 @@ class ShortestRouteView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+class RouteHistoryView(ListAPIView):
+    serializer_class = RouteQuerySerializer
+    def get_queryset(self):
+        # Validate query parameters
+        filter_serializer = HistoryFilterSerializer(data=self.request.query_params)
+        filter_serializer.is_valid(raise_exception=True)
+        params = filter_serializer.validated_data
+        queryset = RouteQuery.objects.all()
+        if "source" in params:
+            queryset = queryset.filter(source=params["source"])
+        if "destination" in params:
+            queryset = queryset.filter(destination=params["destination"])
+        if "date_from" in params:
+            queryset = queryset.filter(created_at__gte=params["date_from"])
+        if "date_to" in params:
+            queryset = queryset.filter(created_at__lte=params["date_to"])
+        if "limit" in params:
+            queryset = queryset[: params["limit"]]
+        return queryset

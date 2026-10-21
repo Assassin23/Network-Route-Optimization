@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from .models import Node, Edge
+from .models import Node, Edge, RouteQuery
 
 class NodeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,3 +43,20 @@ class ShortestRouteRequestSerializer(serializers.Serializer):
         slug_field="name", queryset=Node.objects.all()
     )
 
+class RouteQuerySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RouteQuery
+        fields = [
+            "id",
+            "source",
+            "destination",
+            "total_latency",
+            "path",
+            "created_at",
+        ]
+class HistoryFilterSerializer(serializers.Serializer):
+    source = serializers.CharField(required=False)
+    destination = serializers.CharField(required=False)
+    limit = serializers.IntegerField(min_value=1, required=False)
+    date_from = serializers.DateTimeField(required=False)
+    date_to = serializers.DateTimeField(required=False)
