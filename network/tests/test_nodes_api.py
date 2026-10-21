@@ -119,3 +119,18 @@ def test_delete_node_cascades_to_edges_but_preserves_history(api_client):
     # History must be preserved (D8)
     assert RouteQuery.objects.filter(id=history.id).count() == 1
 
+@pytest.mark.django_db
+def test_model_str_methods():
+    node_a = Node.objects.create(name="ServerA")
+    node_b = Node.objects.create(name="ServerB")
+    edge = Edge.objects.create(source=node_a, destination=node_b, latency=12.5)
+    query = RouteQuery.objects.create(
+        source="ServerA",
+        destination="ServerB",
+        total_latency=12.5,
+        path=["ServerA", "ServerB"],
+    )
+
+    assert str(node_a) == "ServerA"
+    assert str(edge) == "ServerA -> ServerB (12.5ms)"
+    assert str(query) == "ServerA -> ServerB (12.5ms)"

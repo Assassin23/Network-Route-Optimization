@@ -1,132 +1,149 @@
 # Network Route Optimization API
 
-A REST API for modelling a network as a graph and finding the best routes through it. You add **nodes** (servers, routers and so on) and **edges** (weighted links between them), then ask for the optimal path between two nodes.
+A production-grade REST API for modeling network graphs and finding optimal, lowest-latency routes using **Dijkstra's Algorithm**. 
 
-Built with **Django** and **Django REST Framework**, managed with **[uv](https://docs.astral.sh/uv/)**, and developed **test-first (TDD)** with **pytest**.
-
----
-
-## Tech Stack
-
-| Layer | Tool |
-|-------|------|
-| Language | Python 3.13 |
-| Web framework | Django 6 |
-| API toolkit | Django REST Framework |
-| Package / env manager | uv |
-| Testing | pytest + pytest-django |
-| Database (dev) | SQLite |
+Built with **Django 6**, **Django REST Framework**, and **Python 3.13**, managed with **[uv](https://docs.astral.sh/uv/)**, and strictly developed using **Test-Driven Development (TDD)** with **pytest** achieving **100% test coverage**.
 
 ---
 
-## Getting Started
+## 🛠️ Tech Stack
 
-### Prerequisites
+| Layer | Technology |
+|---|---|
+| **Language** | Python 3.13 |
+| **Framework** | Django 6 + Django REST Framework |
+| **API Documentation** | OpenAPI 3.0 via `drf-spectacular` (Swagger & Redoc) |
+| **Algorithm** | Dijkstra's Shortest Path (`heapq` Priority Queue) |
+| **Environment & Package Manager** | `uv` |
+| **Test Suite** | `pytest`, `pytest-django`, `pytest-cov` (**100% coverage**) |
+| **Database** | SQLite (dev) |
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/), which installs the right Python version for you
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - Git
 
-### Setup
-
+### 2. Setup & Installation
 ```bash
 git clone https://github.com/Assassin23/Network-Route-Optimization.git
 cd Network-Route-Optimization
 
-# Create the virtual environment and install all dependencies (including dev tools)
+# Install dependencies into virtual environment
 uv sync
 
-# Create the local database
+# Apply database migrations
 uv run python manage.py migrate
 ```
 
-### Run the development server
-
+### 3. Run the Server
 ```bash
 uv run python manage.py runserver
 ```
-
-The API will be available at <http://127.0.0.1:8000>.
-
----
-
-## Running Tests
-
-```bash
-uv run pytest            # run the full test suite
-uv run pytest -x         # stop at the first failure
-uv run pytest -k nodes   # run tests whose name matches "nodes"
-```
+The API is available at `http://127.0.0.1:8000`.
 
 ---
 
-## API Reference
+## 📖 Interactive API Documentation
 
-> 🚧 The API is being built incrementally. Endpoints marked **Planned** are not implemented yet.
-
-| Method | Endpoint | Description | Status |
-|--------|----------|-------------|--------|
-| `POST` | `/nodes` | Add a node | Planned |
-| — | Edges endpoints | Add, list and remove links between nodes | Planned |
-| — | Route endpoints | Find the optimal path between two nodes | Planned |
-
-### Add Node
-
-**POST** `/nodes`
-
-**Request body**
-
-```json
-{
-  "name": "ServerA"
-}
-```
-
-**Response: `201 Created`**
-
-```json
-{
-  "id": 1,
-  "name": "ServerA"
-}
-```
-
-**Errors**
-
-| Status | Reason |
-|--------|--------|
-| `400 Bad Request` | `name` is missing, blank, or already exists |
+Once the server is running, explore and test the endpoints via interactive docs:
+- **Swagger UI:** [http://127.0.0.1:8000/api/docs/](http://127.0.0.1:8000/api/docs/)
+- **Redoc:** [http://127.0.0.1:8000/api/redoc/](http://127.0.0.1:8000/api/redoc/)
+- **OpenAPI Schema (JSON/YAML):** [http://127.0.0.1:8000/api/schema/](http://127.0.0.1:8000/api/schema/)
 
 ---
 
-## Project Structure
+## 📡 API Reference
 
-```
-.
-├── config/            # Django project settings and root URL config
-├── network/           # App: nodes, edges, route optimization
-│   ├── migrations/
-│   └── tests/         # pytest test suite
-├── manage.py
-├── pyproject.toml     # Project metadata and dependencies (uv)
-├── uv.lock            # Locked dependency versions
-└── pytest.ini         # pytest / pytest-django configuration
-```
+### 1. Nodes
+- **`POST /nodes`**: Add a node.
+  - Body: `{"name": "ServerA"}`
+  - Response (`201`): `{"id": 1, "name": "ServerA"}`
+  - Errors: `400` on missing, empty, or duplicate name.
+- **`GET /nodes`**: List all nodes.
+  - Response (`200`): `[{"id": 1, "name": "ServerA"}]`
+- **`DELETE /nodes/{id}`**: Delete a node.
+  - Response (`204` No Content). Automatically cascades and cleans up connected edges.
 
 ---
 
-## Development Workflow
+### 2. Edges
+- **`POST /edges`**: Add a directed weighted edge between two existing nodes.
+  - Body: `{"source": "ServerA", "destination": "ServerB", "latency": 12.5}`
+  - Response (`201`): `{"id": 1, "source": "ServerA", "destination": "ServerB", "latency": 12.5}`
+  - Errors: `400` if unknown nodes, duplicate edge `(source, destination)`, non-positive latency (`<= 0`), or self-loop (`source == destination`).
+- **`GET /edges`**: List all edges.
+  - Response (`200`): `[{"id": 1, "source": "ServerA", "destination": "ServerB", "latency": 12.5}]`
+- **`DELETE /edges/{id}`**: Delete an edge.
+  - Response (`204` No Content).
 
-This project follows **Test-Driven Development**:
+---
 
-1. 🔴 **Red**: write a failing test for the next small behaviour.
-2. 🟢 **Green**: write the minimum code to make it pass.
-3. 🔵 **Refactor**: clean up while keeping all tests green.
+### 3. Route Optimization
+- **`POST /routes/shortest`**: Calculate lowest-latency path using Dijkstra's algorithm.
+  - Body: `{"source": "ServerA", "destination": "ServerD"}`
+  - Response (`200`):
+    ```json
+    {
+      "total_latency": 23.4,
+      "path": ["ServerA", "ServerB", "ServerD"]
+    }
+    ```
+  - Errors:
+    - `400`: Missing field or node does not exist.
+    - `404`: No path exists (`{"error": "No path exists between ServerA and ServerE"}`).
+  - *Note: Every successful query is automatically logged to query history.*
 
-### Useful commands
+---
 
-```bash
-uv add <package>                          # add a runtime dependency
-uv add --dev <package>                    # add a dev-only dependency
-uv run python manage.py makemigrations    # create migrations after model changes
-uv run python manage.py migrate           # apply migrations
+### 4. Route Query History
+- **`GET /routes/history`**: Retrieve history of successful route calculations (ordered newest first).
+  - Query parameters:
+    - `?source=ServerA`: Filter by source node.
+    - `?destination=ServerD`: Filter by destination node.
+    - `?limit=5`: Limit number of returned results (must be integer `>= 1`).
+    - `?date_from=2026-02-20T00:00:00Z` & `?date_to=2026-02-20T23:59:59Z`: Filter by ISO 8601 date range.
+  - Response (`200`):
+    ```json
+    [
+      {
+        "id": 1,
+        "source": "ServerA",
+        "destination": "ServerD",
+        "total_latency": 23.4,
+        "path": ["ServerA", "ServerB", "ServerD"],
+        "created_at": "2026-02-20T14:30:00Z"
+      }
+    ]
+    ```
+
+---
+
+## 🧪 Testing & Coverage
+
+Run the full pytest suite:
+```powershell
+uv run pytest
+```
+
+Run test suite with detailed line coverage report:
+```powershell
+uv run pytest --cov=network --cov-report=term-missing
+```
+
+### Coverage Summary:
+```
+Name                     Stmts   Miss  Cover
+--------------------------------------------
+network\admin.py            17      0   100%
+network\models.py           25      0   100%
+network\serializers.py      44      0   100%
+network\services.py         27      0   100%
+network\views.py            50      0   100%
+network\urls.py              3      0   100%
+...
+--------------------------------------------
+TOTAL                      543      0   100%
 ```
